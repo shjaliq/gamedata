@@ -66,13 +66,12 @@ function checkScrollPosition() {
 
 .dashboard {
   display: flex;
-  min-height: 100vh; 
-  width: 100%;
+  height: 100vh;
+  width: 100vw;
   padding: var(--gap);
   box-sizing: border-box;
   background: #f5f6fa;
   position: relative;
-  gap: var(--gap); /* 添加面板间距 */
 }
 
 .top-hint {
@@ -100,7 +99,6 @@ function checkScrollPosition() {
   flex-direction: column;
   gap: var(--gap);
   min-width: 300px;
-  height: 100%; /* 确保高度填满 */
 }
 
 .right-panel {
@@ -109,7 +107,6 @@ function checkScrollPosition() {
   flex-direction: column;
   gap: var(--gap);
   min-width: 500px;
-  height: 100%; /* 确保高度填满 */
 }
 
 .chart-box {
@@ -120,15 +117,7 @@ function checkScrollPosition() {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-/* 对齐关键调整：确保热力图和地图的高度比例一致 */
-.drill-chart {
-  flex: 2.5; /* 增加比例 */
-}
-
-.heatmap-chart {
-  flex: 1; /* 减少比例 */
+  flex-shrink: 1;
 }
 
 .pie-row {
@@ -145,8 +134,18 @@ function checkScrollPosition() {
 }
 
 .map-chart {
-  flex: 1; /* 与热力图比例一致 */
-  min-height: 0; /* 允许自由伸缩 */
+  flex: 1.3;
+  min-height: 300px;
+}
+
+.drill-chart {
+  flex: 3;
+  min-height: 400px;
+}
+
+.heatmap-chart {
+  flex: 2;
+  min-height: 300px;
 }
 
 @media (max-width: 1200px) {
@@ -157,16 +156,6 @@ function checkScrollPosition() {
   .left-panel,
   .right-panel {
     min-width: 100%;
-  }
-  
-  /* 小屏幕时允许垂直滚动 */
-  .left-panel, .right-panel {
-    overflow-y: auto;
-  }
-  
-  /* 移动设备上调整热力图高度 */
-  .heatmap-chart {
-    min-height: 350px;
   }
 }
 </style>
