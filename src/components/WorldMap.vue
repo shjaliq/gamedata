@@ -1,14 +1,17 @@
+//WorldMap.vue
 <template>
   <div ref="mapContainer" style="width: 100%; height: 100%;" />
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, nextTick, onBeforeUnmount } from 'vue'
 import * as echarts from 'echarts'
-import * as d3 from 'd3'
+import { chartState } from '@/utils/chartState' // 确保路径正确
 
 const mapContainer = ref(null)
+let chart = null
 
+// 判断欧洲国家的函数保持不变
 function isEuropeanCountry(country) {
   const europeanCountries = new Set([
     "Albania", "Andorra", "Austria", "Belarus", "Belgium", "Bosnia and Herzegovina",
@@ -23,6 +26,7 @@ function isEuropeanCountry(country) {
   return europeanCountries.has(country)
 }
 
+// 处理区域销售数据的函数
 function processRegionData(data) {
   const sales = {
     "North America": { sales: 0, color: "#ff9999" },
@@ -41,6 +45,7 @@ function processRegionData(data) {
   return sales
 }
 
+// 生成地图系列数据
 function generateMapSeries(geoJSON, regionSales) {
   return geoJSON.features.map((feature) => {
     const country = feature.properties?.name || "Unknown"
@@ -69,21 +74,69 @@ function generateMapSeries(geoJSON, regionSales) {
   })
 }
 
-onMounted(async () => {
-  const chart = echarts.init(mapContainer.value)
+// 更新地图数据
+async function updateMap() {
+  if (!chart || !window.worldGeoJSON) return
+  
+  // 根据当前视图过滤数据
+  let filteredData = chartState.rawData
+  
+  if (chartState.currentView === 'publisher') {
+    filteredData = filteredData.filter(d => d.year === chartState.currentYear)
+  } else if (chartState.currentView === 'game') {
+    filteredData = filteredData.filter(d => 
+      d.year === chartState.currentYear && 
+      d.publisher === chartState.currentPublisher
+    )
+  }
 
-  const [mapJson, csvText] = await Promise.all([
-    fetch(import.meta.env.BASE_URL + '/world.json').then(res => res.json()),
-    fetch(import.meta.env.BASE_URL + '/Video_Games.csv').then(res => res.text())
-  ])
+  const regionSales = processRegionData(filteredData)
+  const seriesData = generateMapSeries(window.worldGeoJSON, regionSales)
+  const maxSales = Math.max(...seriesData.map(d => d.value), 1) // 防止为0
 
-  const parsed = d3.csvParse(csvText)
-  const regionSales = processRegionData(parsed)
-  const seriesData = generateMapSeries(mapJson, regionSales)
-  const maxSales = Math.max(...seriesData.map(d => d.value))
+  chart.setOption({
+    title: {
+      text: `全球游戏销售区域分布（单位：百万美元）${getTitleSuffix()}`
+    },
+    tooltip: {
+      trigger: "item",
+      formatter: function (params) {
+        if (!params.data) return ''
+        return `${params.name}: ${params.data.value.toFixed(2)}M`
+      }
+    },
+    visualMap: {
+      min: 0,
+      max: maxSales,
+    },
+    series: [{
+      data: seriesData
+    }]
+  })
+}
 
-  echarts.registerMap("world", mapJson)
+// 获取标题后缀
+function getTitleSuffix() {
+  if (chartState.currentView === 'publisher') {
+    return ` - ${chartState.currentYear}年`
+  } else if (chartState.currentView === 'game') {
+    return ` - ${chartState.currentPublisher} (${chartState.currentYear})`
+  }
+  return ''
+}
 
+// 初始化地图
+async function initMap() {
+  if (!mapContainer.value) return
+  
+  // 加载地图数据（只加载一次）
+  if (!window.worldGeoJSON) {
+    window.worldGeoJSON = await fetch(import.meta.env.BASE_URL + '/world.json').then(res => res.json())
+    echarts.registerMap("world", window.worldGeoJSON)
+  }
+  
+  // 初始化图表
+  chart = echarts.init(mapContainer.value)
   chart.setOption({
     title: {
       text: "全球游戏销售区域分布（单位：百万美元）",
@@ -99,7 +152,7 @@ onMounted(async () => {
     visualMap: {
       type: "continuous",
       min: 0,
-      max: maxSales,
+      max: 100,
       calculable: true,
       inRange: {
         color: ["#ffcccc", "#ff9999", "#ff6666", "#ff3333", "#cc0000"]
@@ -109,23 +162,49 @@ onMounted(async () => {
       type: "map",
       map: "world",
       roam: true,
-      data: seriesData,
       emphasis: {
         label: { show: false },
         itemStyle: {
           areaColor: "#ff6666"
-          // 去掉描边：不写 borderColor 就行，或者设为 transparent/null
         }
       },
       itemStyle: {
-        borderColor: "transparent"  // ← 原来是黑边，改成透明
+        borderColor: "transparent"
       },
       select: {
         label: { show: false }
       }
     }]
   })
-  chart.resize() 
+  
+  // 初始更新
+  updateMap()
+}
+
+// 监听相关状态变化
+watch(
+  () => [
+    chartState.rawData, 
+    chartState.currentView,
+    chartState.currentYear,
+    chartState.currentPublisher
+  ],
+  () => {
+    if (chart) {
+      nextTick(updateMap)
+    }
+  },
+  { deep: true }
+)
+
+onMounted(() => {
+  initMap()
+  window.addEventListener('resize', () => chart?.resize())
+})
+
+onBeforeUnmount(() => {
+  chart?.dispose()
+  window.removeEventListener('resize', () => chart?.resize())
 })
 </script>
 

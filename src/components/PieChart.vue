@@ -1,3 +1,4 @@
+//PieChart.vue
 <template>
   <div class="pie-wrapper">
     <div class="chart-box pie-box">
