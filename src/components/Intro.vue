@@ -3,6 +3,7 @@
     <!-- 装饰元素 -->
     <div class="decoration gamepad-1">🎮</div>
     <div class="decoration gamepad-2">🕹️</div>
+    <div class="decoration gamepad-3">👾</div>
     
     <!-- 主要内容 -->
     <div class="content">
@@ -16,8 +17,22 @@
       </button>
     </div>
     
-    <!-- 底部波纹效果 -->
-    <div class="wave"></div>
+    <!-- 优化后的波浪效果 -->
+    <div class="wave-container">
+      <div class="wave wave-1"></div>
+      <div class="wave wave-2"></div>
+      <div class="wave wave-3"></div>
+    </div>
+    
+    <!-- 成员信息 - 右下角 -->
+    <div class="team-info">
+      <div class="team-name">不知道叫什么2号队</div>
+      <div class="team-members">
+        <span>张琛</span>
+        <span>陈桂斌</span>
+        <span>唐武咲</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -30,9 +45,16 @@ let scrolled = ref(false)
 const scrollToChart = () => {
   if (scrolled.value) return
   scrolled.value = true
-  const chartSection = document.getElementById('chart')
-  if (chartSection) {
-    chartSection.scrollIntoView({ behavior: 'smooth' })
+  
+  // 修复：触发自定义事件，App.vue 需要监听此事件
+  const event = new CustomEvent('scroll-to-dashboard')
+  window.dispatchEvent(event)
+  
+  // 添加按钮点击反馈
+  const btn = document.querySelector('.scroll-btn')
+  if (btn) {
+    btn.classList.add('clicked')
+    setTimeout(() => btn.classList.remove('clicked'), 300)
   }
 }
 
@@ -99,6 +121,47 @@ const handleScrollTrigger = (e) => {
   z-index: 2;
   text-align: center;
   padding: 20px;
+  position: relative;
+  width: 90%;
+  max-width: 800px;
+  margin-bottom: 60px; /* 为波浪留出空间 */
+}
+
+.team-info {
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 12px 20px;
+  width: fit-content;
+  animation: fadeIn 2s ease forwards;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: right;
+  z-index: 3;
+  transition: transform 0.3s ease;
+}
+
+.team-info:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.team-name {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #f1c40f;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.team-members {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 1rem;
 }
 
 .title {
@@ -139,12 +202,35 @@ const handleScrollTrigger = (e) => {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   animation: float 3s ease-in-out infinite;
   border: 2px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.scroll-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: 0.5s;
+}
+
+.scroll-btn:hover::before {
+  left: 100%;
 }
 
 .scroll-btn:hover {
   background: rgba(255, 255, 255, 0.25);
   transform: translateY(-5px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.scroll-btn.clicked {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .arrow-icon {
@@ -159,6 +245,8 @@ const handleScrollTrigger = (e) => {
   font-size: 5rem;
   opacity: 0.15;
   z-index: 1;
+  filter: blur(1px);
+  pointer-events: none;
 }
 
 .gamepad-1 {
@@ -168,21 +256,56 @@ const handleScrollTrigger = (e) => {
 }
 
 .gamepad-2 {
-  bottom: 25%;
+  bottom: 30%;
   right: 15%;
   animation: float 8s ease-in-out infinite 1s;
 }
 
-/* 波浪效果 */
-.wave {
+.gamepad-3 {
+  top: 40%;
+  right: 20%;
+  animation: float 7s ease-in-out infinite 0.5s;
+}
+
+/* 波浪容器 */
+.wave-container {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 100px;
-  background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg" fill="rgba(255,255,255,0.1)"><path d="M0 0v46.29c47.79 22.2 103.59 32.17 158 28 70.36-5.37 136.33-33.31 206.8-37.5 73.84-4.36 147.54 16.88 218.2 35.26 69.27 18 138.3 24.88 209.4 13.08 36.15-6 69.85-17.84 104.45-29.34C989.49 25 1113-14.29 1200 52.47V0z"/></svg>');
-  background-size: 1200px 100px;
-  animation: wave 12s linear infinite;
+  height: 20%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  background-repeat: repeat-x;
+  transform-origin: bottom;
+}
+
+.wave-1 {
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.15) 0%, transparent 70%);
+  animation: wave-animation 12s linear infinite;
+  opacity: 0.7;
+}
+
+.wave-2 {
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+  animation: wave-animation 16s linear infinite reverse;
+  opacity: 0.5;
+  bottom: -10px;
+}
+
+.wave-3 {
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.08) 0%, transparent 70%);
+  animation: wave-animation 20s linear infinite;
+  opacity: 0.3;
+  bottom: -20px;
 }
 
 /* 动画定义 */
@@ -198,17 +321,86 @@ const handleScrollTrigger = (e) => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
 }
 
-@keyframes wave {
-  0% { background-position-x: 0; }
-  100% { background-position-x: 1200px; }
+@keyframes wave-animation {
+  0% { transform: translateX(0) scaleY(1); }
+  50% { transform: translateX(-25%) scaleY(0.85); }
+  100% { transform: translateX(-50%) scaleY(1); }
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .title {
+    font-size: 2.5rem;
+  }
+  
+  .title span {
+    font-size: 1.5rem;
+  }
+  
+  .team-info {
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 15px;
+  }
+  
+  .team-name {
+    font-size: 1.1rem;
+  }
+  
+  .team-members {
+    font-size: 0.9rem;
+  }
+  
+  .scroll-btn {
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+  }
+  
+  .wave-container {
+    height: 15%;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 2rem;
+  }
+  
+  .team-info {
+    bottom: 15px;
+    right: 15px;
+    padding: 8px 12px;
+    border-radius: 15px;
+  }
+  
+  .team-name {
+    font-size: 1rem;
+  }
+  
+  .team-members {
+    font-size: 0.8rem;
+  }
+  
+  .tip {
+    font-size: 1.1rem;
+  }
+  
+  .scroll-btn {
+    font-size: 0.9rem;
+    padding: 0.7rem 1.8rem;
+  }
+  
+  .decoration {
+    font-size: 3.5rem;
+  }
 }
 </style>
