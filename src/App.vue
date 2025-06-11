@@ -25,13 +25,15 @@ let isScrolling = false
 
 onMounted(() => {
   setupScrollObserver()
-  setupScrollListeners()
+  // 移除滚动事件监听器，允许内部滚动
+  // setupScrollListeners()
   window.addEventListener('scroll-to-dashboard', () => {
     scrollToSection(1) // 滚动到dashboard部分
   })
 })
 
 onBeforeUnmount(() => {
+  // 移除滚动事件监听器
   window.removeEventListener('wheel', handleWheel, { passive: false })
   window.removeEventListener('touchstart', handleTouchStart, { passive: false })
   window.removeEventListener('touchmove', handleTouchMove, { passive: false })
@@ -54,47 +56,11 @@ function setupScrollObserver() {
   observer.observe(dashboardSection.value)
 }
 
-function setupScrollListeners() {
-  window.addEventListener('wheel', handleWheel, { passive: false })
-  window.addEventListener('touchstart', handleTouchStart, { passive: false })
-  window.addEventListener('touchmove', handleTouchMove, { passive: false })
-}
-
-let touchStartY = 0
-function handleTouchStart(e) {
-  touchStartY = e.touches[0].clientY
-}
-
-function handleTouchMove(e) {
-  if (isScrolling) return
-  
-  const touchEndY = e.touches[0].clientY
-  const deltaY = touchEndY - touchStartY
-  
-  // 向下滑动且当前在Intro部分
-  if (deltaY < -50 && currentSection.value === 0) {
-    scrollToSection(1)
-  } 
-  // 向上滑动且当前在Dashboard部分
-  else if (deltaY > 50 && currentSection.value === 1) {
-    scrollToSection(0)
-  }
-}
-
-function handleWheel(e) {
-  if (isScrolling) return
-  
-  // 向下滚动且当前在Intro部分
-  if (e.deltaY > 50 && currentSection.value === 0) {
-    scrollToSection(1)
-    e.preventDefault()
-  } 
-  // 向上滚动且当前在Dashboard部分
-  else if (e.deltaY < -50 && currentSection.value === 1) {
-    scrollToSection(0)
-    e.preventDefault()
-  }
-}
+// 移除这些函数，因为它们会阻止内部滚动
+// function setupScrollListeners() { ... }
+// function handleTouchStart(e) { ... }
+// function handleTouchMove(e) { ... }
+// function handleWheel(e) { ... }
 
 function scrollToSection(index) {
   isScrolling = true
@@ -115,21 +81,18 @@ function scrollToSection(index) {
 .app-container {
   height: 100vh;
   width: 100vw;
-  overflow: hidden;
+  overflow: auto; /* 改为允许滚动 */
   position: relative;
   scroll-behavior: smooth;
 }
 
 .page-section {
-  height: 100vh;
+  min-height: 100vh; /* 改为 min-height 允许内容扩展 */
   width: 100vw;
-  scroll-snap-align: start;
 }
 
-/* 平滑滚动容器 */
-.app-container {
+/* 移除强制滚动捕捉 */
+/* .app-container {
   scroll-snap-type: y mandatory;
-  overflow-y: scroll;
-  -webkit-overflow-scrolling: touch;
-}
+} */
 </style>
